@@ -143,10 +143,12 @@ export const VideoElement = React.memo(function VideoElement(props) {
 
   return (
     <div>
-      <button onClick={() => playPause()}>Play/Pause</button>
-      <button onClick={() => describe()}>Describe</button>
-      <br />
-      <br />
+      <h1>
+        Video Description Prototype
+      </h1>
+      <h2>
+        Choose a Video to Load
+      </h2>
       <button onClick={() => loadLionKingVideo()}>Load Lion King Video</button>
       <button onClick={() => loadDentalVideo()}>
         Load Dental College Video
@@ -155,6 +157,12 @@ export const VideoElement = React.memo(function VideoElement(props) {
       <button onClick={() => loadGirlWavingVideo()}>
         Load Basic Wave Video
       </button>
+      <br />
+      <br />
+      <h2>Video + Controls</h2>
+      <button onClick={() => playPause()}>Play/Pause</button>
+      <button onClick={() => describe()}>Describe</button>
+      <br />
       {videoLoaded === "test_file.mp4" && (
         <video id="video1" width="700" height="500">
           <source id="videoSource" src={"test_file.mp4"} type="video/mp4" />
