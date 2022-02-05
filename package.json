@@ -1,26 +1,26 @@
 {
-  "name": "audio-description",
+  "name": "ADDemo",
   "version": "1.0.0",
-  "description": "Testing using image captions for audio description",
+  "description": "Audio Description Demo",
   "main": "index.tsx",
   "scripts": {
     "build": "webpack",
-    "watch": "webpack -w",
-    "start": "webpack-dev-server --config webpack.config.js --package package.json"
+    "watch": "webpack --watch",
+    "start": "webpack serve --open"
   },
   "dependencies": {
-    "@azure/cognitiveservices-computervision": "^7.0.0",
-    "microsoft-cognitiveservices-speech-sdk": "^1.17.0",
-    "react": "^16.8.3",
-    "react-dom": "^16.8.3"
+    "@azure/cognitiveservices-computervision": "^8.1.0",
+    "microsoft-cognitiveservices-speech-sdk": "^1.20.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
   },
   "devDependencies": {
-    "@types/node": "^10.17.24",
-    "@types/react-dom": "^16.0.11",
-    "ts-loader": "^8.0.3",
-    "typescript": "~3.7.4",
-    "webpack": "^4.44.1",
-    "webpack-cli": "^3.3.12",
-    "webpack-dev-server": "^3.11.0"
+    "@types/node": "^17.0.5",
+    "@types/react-dom": "^17.0.11",
+    "ts-loader": "^9.2.6",
+    "typescript": "~4.5.5",
+    "webpack": "^5.68.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4"
   }
 }
