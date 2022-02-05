@@ -1,14 +1,8 @@
 "use strict";
 
-const path = require("path");
-
 module.exports = {
-  entry: "./src/index.tsx",
   devServer: {
-    port: 3000
-  },
-  output: {
-    filename: "bundle.js"
+    static: __dirname,
   },
   module: {
     rules: [
