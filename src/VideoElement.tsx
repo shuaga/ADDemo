@@ -26,6 +26,8 @@ var endpoint = "https://westus2.api.cognitive.microsoft.com/";
  */
 export const VideoElement = React.memo(function VideoElement(props) {
   const [videoLoaded, setVideoLoaded] = useState("test_file.mp4");
+  const [youTubeVideoUrl, setYouTubeVideoUrl] = useState<string>("");
+
   const speechsdk: any = require("microsoft-cognitiveservices-speech-sdk");
 
   function computerVision(imageUrl: string, tts: boolean) {
@@ -125,20 +127,33 @@ export const VideoElement = React.memo(function VideoElement(props) {
     }
   }
 
+  const resetYouTubeVideoLink = () => {
+    setYouTubeVideoUrl("");
+  }
+
   function loadLionKingVideo(): void {
     setVideoLoaded("lion-king_Trim.mp4");
+    resetYouTubeVideoLink();
   }
 
   function loadDentalVideo(): void {
     setVideoLoaded("dental-video-demo-trim.mp4");
+    resetYouTubeVideoLink();
   }
 
   function loadTravelVideo(): void {
     setVideoLoaded("test_file.mp4");
+    resetYouTubeVideoLink();
   }
 
   function loadGirlWavingVideo(): void {
     setVideoLoaded("arnavi_test.mp4");
+    resetYouTubeVideoLink();
+  }
+
+  const loadYouTubeVideo = () => {
+    const videoUrl = (document.getElementById("youtubevideolink") as any)?.value;
+    setYouTubeVideoUrl(videoUrl);
   }
 
   return (
@@ -157,23 +172,29 @@ export const VideoElement = React.memo(function VideoElement(props) {
       <button onClick={() => loadGirlWavingVideo()}>
         Load Basic Wave Video
       </button>
+      <div style={{marginTop: 30}}>
+          <input id="youtubevideolink" width={200} placeholder="Enter YouTube link" title="Enter YouTube link"/>
+          <button onClick={() => loadYouTubeVideo()}>
+              Load YouTube Video
+          </button>
+      </div>
       <br />
       <br />
       <h2>Video + Controls</h2>
       <button onClick={() => playPause()}>Play/Pause</button>
       <button onClick={() => describe()}>Describe</button>
       <br />
-      {videoLoaded === "test_file.mp4" && (
+      {videoLoaded === "test_file.mp4" && youTubeVideoUrl === "" && (
         <video id="video1" width="700" height="500">
           <source id="videoSource" src={"test_file.mp4"} type="video/mp4" />
         </video>
       )}
-      {videoLoaded === "arnavi_test.mp4" && (
+      {videoLoaded === "arnavi_test.mp4" && youTubeVideoUrl === "" &&(
         <video id="video1" width="700" height="500">
           <source id="videoSource" src={"arnavi_test.mp4"} type="video/mp4" />
         </video>
       )}
-      {videoLoaded === "dental-video-demo-trim.mp4" && (
+      {videoLoaded === "dental-video-demo-trim.mp4" && youTubeVideoUrl === "" && (
         <video id="video1" width="700" height="500">
           <source
             id="videoSource"
@@ -182,7 +203,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
           />
         </video>
       )}
-      {videoLoaded === "lion-king_Trim.mp4" && (
+      {videoLoaded === "lion-king_Trim.mp4" && youTubeVideoUrl === "" && (
         <video id="video1" width="700" height="500">
           <source
             id="videoSource"
@@ -191,6 +212,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
           />
         </video>
       )}
+      {youTubeVideoUrl !== "" && <div style={{marginTop:30}}><iframe width="640" height="360" src={`https://www.youtube.com/embed/` + youTubeVideoUrl.substring(youTubeVideoUrl.lastIndexOf("/"))} title="YouTube video player"></iframe></div>}
     </div>
   );
 });
