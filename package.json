@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@azure/cognitiveservices-computervision": "^8.1.0",
+    "@types/w3c-image-capture": "^1.0.5",
+    "@types/youtube": "0.0.46",
     "microsoft-cognitiveservices-speech-sdk": "^1.20.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2"
