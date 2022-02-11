@@ -1,19 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-
-const ComputerVisionClient =
-  require("@azure/cognitiveservices-computervision").ComputerVisionClient;
-const ApiKeyCredentials = require("@azure/ms-rest-js").ApiKeyCredentials;
-
-function base64ToArrayBuffer(base64: string) {
-  const binaryString = window.atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (var i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { ApiKeyCredentials, base64ToArrayBuffer, ComputerVisionClient } from "./Utilities";
 
 /**
  * DO NOT SHARE. This is hard-coded here for rapid prototyping of this project.
@@ -64,10 +51,10 @@ export const VideoElement = React.memo(function VideoElement(props) {
     try {
       let image = new ImageCapture(track);
       const bitmap = await image.grabFrame();
-      context?.drawImage(bitmap,posX, posY, width, height,0,0,width,height);
+      context?.drawImage(bitmap, posX, posY, width, height, 0, 0, width, height);
       computerVision(canvas.toDataURL("image/png"), true);
-      // const pic = document.getElementById("picture")!;
-      // pic.appendChild(canvas);
+      const pic = document.getElementById("picture")!;
+      pic.appendChild(canvas);
       playPause();
     } catch (err) {
       console.error("Error: " + err);
@@ -187,30 +174,27 @@ export const VideoElement = React.memo(function VideoElement(props) {
     }
   }
 
-  const resetYouTubeVideoLink = () => {
+  function loadSampleVideo(videoId: string): void {
+    setVideoLoaded(videoId);
     setYouTubeVideoUrl("");
   }
 
-  function loadLionKingVideo(): void {
-    setVideoLoaded("lion-king_Trim.mp4");
-    resetYouTubeVideoLink();
-  }
-
-  function loadDentalVideo(): void {
-    setVideoLoaded("dental-video-demo-trim.mp4");
-    resetYouTubeVideoLink();
-  }
-
-  function loadTravelVideo(): void {
-    setVideoLoaded("test_file.mp4");
-    resetYouTubeVideoLink();
-  }
-
-  function loadGirlWavingVideo(): void {
-    setVideoLoaded("arnavi_test.mp4");
-    resetYouTubeVideoLink();
+  const SampleVideoButtons = (): JSX.Element => {
+    return (
+      <>
+        <button onClick={() => loadSampleVideo("lion-king_Trim.mp4")}>Load Lion King Video</button>
+        <button onClick={() => loadSampleVideo("dental-video-demo-trim.mp4")}> Load Dental College Video </button>
+        <button onClick={() => loadSampleVideo("test_file.mp4")}>Load Amazon Tribe Video</button>
+        <button onClick={() => loadSampleVideo("arnavi_test.mp4")}> Load Basic Wave Video</button></>
+    );
   }
   
+  const SampleVideo = (props: {src: string}): JSX.Element => {
+    return (
+      <video id="video1" width="700" height="500">
+        <source id="videoSource" src={props.src} type="video/mp4"/>
+      </video>);
+  }
 
   const loadYouTubeVideo = () => {
     const videoUrl = (document.getElementById("youtubevideolinkinput") as any)?.value;
@@ -230,14 +214,8 @@ export const VideoElement = React.memo(function VideoElement(props) {
       <h2>
         Choose a Video to Load
       </h2>
-      <button onClick={() => loadLionKingVideo()}>Load Lion King Video</button>
-      <button onClick={() => loadDentalVideo()}>
-        Load Dental College Video
-      </button>
-      <button onClick={() => loadTravelVideo()}>Load Amazon Tribe Video</button>
-      <button onClick={() => loadGirlWavingVideo()}>
-        Load Basic Wave Video
-      </button>
+      <SampleVideoButtons />
+
       <div style={{marginTop: 30}}>
           <input id="youtubevideolinkinput" width={200} placeholder="Enter YouTube link" title="Enter YouTube link"/>
           <button onClick={() => loadYouTubeVideo()}>
@@ -261,10 +239,3 @@ export const VideoElement = React.memo(function VideoElement(props) {
     </div>
   );
 });
-
-const SampleVideo = (props: {src: string}): JSX.Element => {
-  return (
-    <video id="video1" width="700" height="500">
-      <source id="videoSource" src={props.src} type="video/mp4"/>
-    </video>);
-}
