@@ -51,10 +51,26 @@ export const VideoElement = React.memo(function VideoElement(props) {
     try {
       let image = new ImageCapture(track);
       const bitmap = await image.grabFrame();
-      context?.drawImage(bitmap, posX, posY, width, height, 0, 0, width, height);
+      
+      // The zoom level on the user screen can be different from 100%. 
+      // We want to capture the entire screen and crop the relevant part.
+      // The tempCanvas creates a replica of the user screen; from which the relevant image is drawn into canvas.
+      // If tempCanvas is not used, then the scaling goes off and it only works when the browser zoom is set to 100%.
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = window.innerWidth;
+      tempCanvas.height = window.innerHeight;
+      const tempContext = tempCanvas.getContext("2d");
+      tempContext?.drawImage(bitmap,0,0,tempCanvas.width,tempCanvas.height);
+      context?.drawImage(tempCanvas, posX, posY, width, height, 0, 0, width, height);
       computerVision(canvas.toDataURL("image/png"), true);
-      const pic = document.getElementById("picture")!;
-      pic.appendChild(canvas);
+
+      // This is for debugging to see the captured screenshot.
+      // const pic = document.getElementById("picture")!;
+      // if(pic.childElementCount > 0)
+      //   pic.replaceChild(canvas,pic.children[0]);
+      // else
+      //   pic.appendChild(canvas);
+
       playPause();
     } catch (err) {
       console.error("Error: " + err);
@@ -235,7 +251,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
         </iframe>
       </div>}
       {/* The below div is used to render the captured screenshot for debugging purposes */}
-      <div id="picture"></div> 
+      <div id="picture" style={{marginTop:60, backgroundColor: 'gray'}}></div> 
     </div>
   );
 });
