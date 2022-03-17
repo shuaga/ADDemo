@@ -2,30 +2,36 @@ module.exports = async function (context, req) {
     /**
     * DO NOT SHARE. This is hard-coded here for rapid prototyping of this project.
     */
-    /*const key = "8c382a13dd044dd1a92a4ccb3f0310c9";
+    const key = "8c382a13dd044dd1a92a4ccb3f0310c9";
     const endpoint = "https://westus2.api.cognitive.microsoft.com/";
     
-    const ComputerVisionClient = require("@azure/cognitiveservices-computervision").ComputerVisionClient;
-    const ApiKeyCredentials = require("@azure/ms-rest-js").ApiKeyCredentials;
-    const computerVisionClient = new ComputerVisionClient(new ApiKeyCredentials({ inHeader: { "Ocp-Apim-Subscription-Key": key } }), endpoint);
+    try {
+      const ComputerVisionClient = require("@azure/cognitiveservices-computervision").ComputerVisionClient;
+      const ApiKeyCredentials = require("@azure/ms-rest-js").ApiKeyCredentials;
+      const computerVisionClient = new ComputerVisionClient(new ApiKeyCredentials({ inHeader: { "Ocp-Apim-Subscription-Key": key } }), endpoint);
 
-    const imageUrl = req && req.body && req.body.imageUrl;
-    const rawBase64Arr = imageUrl.split(",");
-    const base64String = rawBase64Arr[1];
-    const byteArray = base64ToArrayBuffer(base64String);
+      const imageUrl = req && req.body && req.body.imageUrl;
+      const rawBase64Arr = imageUrl.split(",");
+      const base64String = rawBase64Arr[1];
+      const byteArray = base64ToArrayBuffer(base64String);
 
-    const captions = await computerVisionClient.describeImageInStream(byteArray);
-    const description = captions.captions[0].text;
-    const confidence = captions.captions[0].confidence;
+      const captions = await computerVisionClient.describeImageInStream(byteArray);
+      const description = captions.captions[0].text;
+      const confidence = captions.captions[0].confidence;
 
-    context.res = {
-        body: {
-            description: description,
-            confidence: confidence
-        }
-    }*/
-    context.res = {
-        body: "HelloWorld"
+      context.res = {
+          body: {
+              description: description,
+              confidence: confidence
+          }
+      }
+    }
+    catch (err) {
+      context.res = {
+          body: {
+              error: err
+          }
+      }
     }
 }
 
