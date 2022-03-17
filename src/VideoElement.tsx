@@ -1,19 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
-
-const ComputerVisionClient =
-  require("@azure/cognitiveservices-computervision").ComputerVisionClient;
-const ApiKeyCredentials = require("@azure/ms-rest-js").ApiKeyCredentials;
-
-function base64ToArrayBuffer(base64: string) {
-  const binaryString = window.atob(base64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (var i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
+import { ApiKeyCredentials, base64ToArrayBuffer, ComputerVisionClient } from "./Utilities";
 
 /**
  * DO NOT SHARE. This is hard-coded here for rapid prototyping of this project.
@@ -21,12 +8,74 @@ function base64ToArrayBuffer(base64: string) {
 var key = "8c382a13dd044dd1a92a4ccb3f0310c9";
 var endpoint = "https://westus2.api.cognitive.microsoft.com/";
 
+let player;
+(window as any).onYouTubeIframeAPIReady = () => {
+  player = new YT.Player('youtubeiframe', {});
+}
+
+let captureStream;
+let track;
+let video: HTMLVideoElement;
+
 /**
  * The Video Component for our application, including the video interaction controls.
  */
 export const VideoElement = React.memo(function VideoElement(props) {
   const [videoLoaded, setVideoLoaded] = useState("test_file.mp4");
+  const [youTubeVideoUrl, setYouTubeVideoUrl] = useState<string>("");
+  React.useEffect(() => {
+    navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true } as DisplayMediaStreamConstraints).then(stream => {
+      captureStream = stream;
+      track = captureStream.getVideoTracks()[0];
+
+      // This is a hack. Even though this video element is not being used for any purpose.
+      // Right now, removing this video element makes the videostream track to go into an inconsistent state.
+      video = document.createElement("video");
+      video.srcObject = captureStream;
+    });
+  },[]);
+
   const speechsdk: any = require("microsoft-cognitiveservices-speech-sdk");
+
+  const capture = async () => {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    const offsets = document.getElementById("youtubeiframe")?.getBoundingClientRect();
+    const posX = offsets?.left!;
+    const posY = offsets?.top!;
+    const width = offsets?.width!;
+    const height = offsets?.height!;
+    canvas.width = width;
+    canvas.height = height;
+  
+    try {
+      let image = new ImageCapture(track);
+      const bitmap = await image.grabFrame();
+      
+      // The zoom level on the user screen can be different from 100%. 
+      // We want to capture the entire screen and crop the relevant part.
+      // The tempCanvas creates a replica of the user screen; from which the relevant image is drawn into canvas.
+      // If tempCanvas is not used, then the scaling goes off and it only works when the browser zoom is set to 100%.
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = window.innerWidth;
+      tempCanvas.height = window.innerHeight;
+      const tempContext = tempCanvas.getContext("2d");
+      tempContext?.drawImage(bitmap,0,0,tempCanvas.width,tempCanvas.height);
+      context?.drawImage(tempCanvas, posX, posY, width, height, 0, 0, width, height);
+      computerVision(canvas.toDataURL("image/png"), true);
+
+      // This is for debugging to see the captured screenshot.
+      // const pic = document.getElementById("picture")!;
+      // if(pic.childElementCount > 0)
+      //   pic.replaceChild(canvas,pic.children[0]);
+      // else
+      //   pic.appendChild(canvas);
+
+      playPause();
+    } catch (err) {
+      console.error("Error: " + err);
+    }
+  };
 
   function computerVision(imageUrl: string, tts: boolean) {
     var computerVisionClient = new ComputerVisionClient(
@@ -73,11 +122,17 @@ export const VideoElement = React.memo(function VideoElement(props) {
                   // note: this is a bit of a hack, ideally we'd have a way of knowing when
                   // the TTS has ended
                   setTimeout(function () {
-                    var myVideoElement = document.getElementById("video1");
-                    if (myVideoElement) {
-                      const myVideo = myVideoElement as HTMLVideoElement;
-                      if (myVideo.paused) {
-                        myVideo.play();
+                    if(youTubeVideoUrl === "") {
+                      var myVideoElement = document.getElementById("video1");
+                      if (myVideoElement) {
+                        const myVideo = myVideoElement as HTMLVideoElement;
+                        if (myVideo.paused) {
+                          myVideo.play();
+                        }
+                      } 
+                    } else {
+                      if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                        player.playVideo();
                       }
                     }
                   }, 4000);
@@ -96,49 +151,75 @@ export const VideoElement = React.memo(function VideoElement(props) {
   }
 
   function playPause() {
-    var myVideoElement = document.getElementById("video1");
-    if (myVideoElement) {
-      const myVideo = myVideoElement as HTMLVideoElement;
-      if (myVideo.paused) {
-        myVideo.play();
+    if(youTubeVideoUrl === "") {
+      var myVideoElement = document.getElementById("video1");
+      if (myVideoElement) {
+        const myVideo = myVideoElement as HTMLVideoElement;
+        if (myVideo.paused) {
+          myVideo.play();
+        } else {
+          myVideo.pause();
+        }
+      }
+    } else {
+      if(player.getPlayerState() === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
       } else {
-        myVideo.pause();
+        player.playVideo();
       }
     }
   }
 
   function describe() {
-    var myVideoElement = document.getElementById("video1");
-    if (myVideoElement) {
-      const myVideo = myVideoElement as HTMLVideoElement;
-      if (!myVideo.paused) {
-        myVideo.pause();
+    if(youTubeVideoUrl === "") {
+      const myVideoElement = document.getElementById("video1");
+      if (myVideoElement) {
+        const myVideo = myVideoElement as HTMLVideoElement;
+        if (!myVideo.paused) {
+          myVideo.pause();
+        }
+        var canvas = document.createElement("canvas");
+        canvas.height = myVideo.videoHeight;
+        canvas.width = myVideo.videoWidth;
+        var ctx = canvas.getContext("2d");
+        ctx?.drawImage(myVideo, 0, 0, canvas.width, canvas.height);
+        computerVision(canvas.toDataURL("image/jpeg"), true);
       }
-      var canvas = document.createElement("canvas");
-      canvas.height = myVideo.videoHeight;
-      canvas.width = myVideo.videoWidth;
-      var ctx = canvas.getContext("2d");
-      ctx?.drawImage(myVideo, 0, 0, canvas.width, canvas.height);
-      var img = new Image();
-      img.src = canvas.toDataURL();
-      computerVision(canvas.toDataURL("image/jpeg"), true);
+    } else {
+      capture();
     }
   }
 
-  function loadLionKingVideo(): void {
-    setVideoLoaded("lion-king_Trim.mp4");
+  function loadSampleVideo(videoId: string): void {
+    setVideoLoaded(videoId);
+    setYouTubeVideoUrl("");
   }
 
-  function loadDentalVideo(): void {
-    setVideoLoaded("dental-video-demo-trim.mp4");
+  const SampleVideoButtons = (): JSX.Element => {
+    return (
+      <>
+        <button onClick={() => loadSampleVideo("lion-king_Trim.mp4")}>Load Lion King Video</button>
+        <button onClick={() => loadSampleVideo("dental-video-demo-trim.mp4")}> Load Dental College Video </button>
+        <button onClick={() => loadSampleVideo("test_file.mp4")}>Load Amazon Tribe Video</button>
+        <button onClick={() => loadSampleVideo("arnavi_test.mp4")}> Load Basic Wave Video</button></>
+    );
+  }
+  
+  const SampleVideo = (props: {src: string}): JSX.Element => {
+    return (
+      <video id="video1" width="700" height="500">
+        <source id="videoSource" src={props.src} type="video/mp4"/>
+      </video>);
   }
 
-  function loadTravelVideo(): void {
-    setVideoLoaded("test_file.mp4");
-  }
+  const loadYouTubeVideo = () => {
+    const videoUrl = (document.getElementById("youtubevideolinkinput") as any)?.value;
+    setYouTubeVideoUrl(videoUrl);
 
-  function loadGirlWavingVideo(): void {
-    setVideoLoaded("arnavi_test.mp4");
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
   }
 
   return (
@@ -149,48 +230,28 @@ export const VideoElement = React.memo(function VideoElement(props) {
       <h2>
         Choose a Video to Load
       </h2>
-      <button onClick={() => loadLionKingVideo()}>Load Lion King Video</button>
-      <button onClick={() => loadDentalVideo()}>
-        Load Dental College Video
-      </button>
-      <button onClick={() => loadTravelVideo()}>Load Amazon Tribe Video</button>
-      <button onClick={() => loadGirlWavingVideo()}>
-        Load Basic Wave Video
-      </button>
+      <SampleVideoButtons />
+
+      <div style={{marginTop: 30}}>
+          <input id="youtubevideolinkinput" width={200} placeholder="Enter YouTube link" title="Enter YouTube link"/>
+          <button onClick={() => loadYouTubeVideo()}>
+              Load YouTube Video
+          </button>
+      </div>
       <br />
       <br />
       <h2>Video + Controls</h2>
       <button onClick={() => playPause()}>Play/Pause</button>
       <button onClick={() => describe()}>Describe</button>
       <br />
-      {videoLoaded === "test_file.mp4" && (
-        <video id="video1" width="700" height="500">
-          <source id="videoSource" src={"test_file.mp4"} type="video/mp4" />
-        </video>
-      )}
-      {videoLoaded === "arnavi_test.mp4" && (
-        <video id="video1" width="700" height="500">
-          <source id="videoSource" src={"arnavi_test.mp4"} type="video/mp4" />
-        </video>
-      )}
-      {videoLoaded === "dental-video-demo-trim.mp4" && (
-        <video id="video1" width="700" height="500">
-          <source
-            id="videoSource"
-            src={"dental-video-demo-trim.mp4"}
-            type="video/mp4"
-          />
-        </video>
-      )}
-      {videoLoaded === "lion-king_Trim.mp4" && (
-        <video id="video1" width="700" height="500">
-          <source
-            id="videoSource"
-            src={"lion-king_Trim.mp4"}
-            type="video/mp4"
-          />
-        </video>
-      )}
+      { youTubeVideoUrl === "" && <SampleVideo src={videoLoaded} key={videoLoaded}/> }
+      {youTubeVideoUrl !== "" && <div style={{marginTop:30}}>
+        <iframe id="youtubeiframe" width="640" height="360" 
+          src={`https://www.youtube.com/embed/` + youTubeVideoUrl.substring(youTubeVideoUrl.lastIndexOf("/")) + `?controls=0&enablejsapi=1&rel=0`}>
+        </iframe>
+      </div>}
+      {/* The below div is used to render the captured screenshot for debugging purposes */}
+      <div id="picture" style={{marginTop:60, backgroundColor: 'gray'}}></div> 
     </div>
   );
 });
