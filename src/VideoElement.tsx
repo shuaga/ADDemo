@@ -87,21 +87,6 @@ export const VideoElement = React.memo(function VideoElement(props) {
     const base64String = rawBase64Arr[1];
     const byteArray = base64ToArrayBuffer(base64String);
 
-    var speechSubscriptionKey = "ba6b405e432940cd85fd6d9d894f634d";
-    var speechServiceRegion = "eastus";
-
-    const audioConfig = speechsdk.AudioConfig.fromDefaultSpeakerOutput();
-    var speechConfig = speechsdk.SpeechConfig.fromSubscription(
-      speechSubscriptionKey,
-      speechServiceRegion
-    );
-    speechConfig.speechSynthesisVoiceName = "en-US-JennyNeural";
-
-    const synthesizer = new speechsdk.SpeechSynthesizer(
-      speechConfig,
-      audioConfig
-    );
-
     computerVisionClient
       .describeImageInStream(byteArray)
       .then(async (captions) => {
@@ -109,41 +94,24 @@ export const VideoElement = React.memo(function VideoElement(props) {
         const confidence = captions.captions[0].confidence;
 
         if (tts) {
-          synthesizer.speakTextAsync(
-            description,
-            (result) => {
-              if (result) {
-                synthesizer.close();
-                const data = result.audioData;
-                if (
-                  result.reason ===
-                  speechsdk.ResultReason.SynthesizingAudioCompleted
-                ) {
-                  // note: this is a bit of a hack, ideally we'd have a way of knowing when
-                  // the TTS has ended
-                  setTimeout(function () {
-                    if(youTubeVideoUrl === "") {
-                      var myVideoElement = document.getElementById("video1");
-                      if (myVideoElement) {
-                        const myVideo = myVideoElement as HTMLVideoElement;
-                        if (myVideo.paused) {
-                          myVideo.play();
-                        }
-                      } 
-                    } else {
-                      if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
-                        player.playVideo();
-                      }
-                    }
-                  }, 4000);
+          let utterance = new SpeechSynthesisUtterance(description);
+          utterance.onend = () => {
+            if(youTubeVideoUrl === "") {
+              var myVideoElement = document.getElementById("video1");
+              if (myVideoElement) {
+                const myVideo = myVideoElement as HTMLVideoElement;
+                if (myVideo.paused) {
+                  myVideo.play();
                 }
+              } 
+            } 
+            else {
+              if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                player.playVideo();
               }
-            },
-            (error) => {
-              console.log(error);
-              synthesizer.close();
             }
-          );
+          }
+          window.speechSynthesis.speak(utterance);
         }
 
         console.log(`${description} (confidence=${confidence.toFixed(2)})`);
