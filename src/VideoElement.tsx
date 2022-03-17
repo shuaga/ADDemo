@@ -1,21 +1,15 @@
 import * as React from "react";
 import { useState } from "react";
-import { ApiKeyCredentials, base64ToArrayBuffer, ComputerVisionClient } from "./Utilities";
-
-/**
- * DO NOT SHARE. This is hard-coded here for rapid prototyping of this project.
- */
-var key = "8c382a13dd044dd1a92a4ccb3f0310c9";
-var endpoint = "https://westus2.api.cognitive.microsoft.com/";
+import axios from 'axios';
 
 let player;
-(window as any).onYouTubeIframeAPIReady = () => {
-  player = new YT.Player('youtubeiframe', {});
-}
-
 let captureStream;
 let track;
 let video: HTMLVideoElement;
+
+(window as any).onYouTubeIframeAPIReady = () => {
+  player = new YT.Player('youtubeiframe', {});
+}
 
 /**
  * The Video Component for our application, including the video interaction controls.
@@ -33,9 +27,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
       video = document.createElement("video");
       video.srcObject = captureStream;
     });
-  },[]);
-
-  const speechsdk: any = require("microsoft-cognitiveservices-speech-sdk");
+  }, []);
 
   const capture = async () => {
     const canvas = document.createElement("canvas");
@@ -47,11 +39,11 @@ export const VideoElement = React.memo(function VideoElement(props) {
     const height = offsets?.height!;
     canvas.width = width;
     canvas.height = height;
-  
+
     try {
       let image = new ImageCapture(track);
       const bitmap = await image.grabFrame();
-      
+
       // The zoom level on the user screen can be different from 100%. 
       // We want to capture the entire screen and crop the relevant part.
       // The tempCanvas creates a replica of the user screen; from which the relevant image is drawn into canvas.
@@ -60,66 +52,51 @@ export const VideoElement = React.memo(function VideoElement(props) {
       tempCanvas.width = window.innerWidth;
       tempCanvas.height = window.innerHeight;
       const tempContext = tempCanvas.getContext("2d");
-      tempContext?.drawImage(bitmap,0,0,tempCanvas.width,tempCanvas.height);
+      tempContext?.drawImage(bitmap, 0, 0, tempCanvas.width, tempCanvas.height);
       context?.drawImage(tempCanvas, posX, posY, width, height, 0, 0, width, height);
-      computerVision(canvas.toDataURL("image/png"), true);
+      captionImage(canvas.toDataURL("image/png"), true);
 
-      // This is for debugging to see the captured screenshot.
-      // const pic = document.getElementById("picture")!;
-      // if(pic.childElementCount > 0)
-      //   pic.replaceChild(canvas,pic.children[0]);
-      // else
-      //   pic.appendChild(canvas);
+      //This is for debugging to see the captured screenshot.
+      const pic = document.getElementById("picture")!;
+      if(pic.childElementCount > 0)
+        pic.replaceChild(canvas,pic.children[0]);
+      else
+        pic.appendChild(canvas);
 
       playPause();
-    } catch (err) {
+    } 
+    catch (err) {
       console.error("Error: " + err);
     }
   };
 
-  function computerVision(imageUrl: string, tts: boolean) {
-    var computerVisionClient = new ComputerVisionClient(
-      new ApiKeyCredentials({ inHeader: { "Ocp-Apim-Subscription-Key": key } }),
-      endpoint
-    );
-
-    const rawBase64Arr = imageUrl.split(",");
-    const base64String = rawBase64Arr[1];
-    const byteArray = base64ToArrayBuffer(base64String);
-
-    computerVisionClient
-      .describeImageInStream(byteArray)
-      .then(async (captions) => {
-        const description = captions.captions[0].text;
-        const confidence = captions.captions[0].confidence;
-
-        if (tts) {
-          let utterance = new SpeechSynthesisUtterance(description);
-          utterance.onend = () => {
-            if(youTubeVideoUrl === "") {
-              var myVideoElement = document.getElementById("video1");
-              if (myVideoElement) {
-                const myVideo = myVideoElement as HTMLVideoElement;
-                if (myVideo.paused) {
-                  myVideo.play();
-                }
-              } 
-            } 
-            else {
-              if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
-                player.playVideo();
-              }
+  async function captionImage(imageUrl: string, tts: boolean) {
+    if (tts) {
+      const result = await axios.post('../api/CaptionImage', { imageUrl: imageUrl });
+      console.log(`${result.data.description} (confidence=${result.data.confidence.toFixed(2)})`);
+      const utterance = new SpeechSynthesisUtterance(result.data.description);
+      utterance.onend = () => {
+        if (youTubeVideoUrl === "") {
+          var myVideoElement = document.getElementById("video1");
+          if (myVideoElement) {
+            const myVideo = myVideoElement as HTMLVideoElement;
+            if (myVideo.paused) {
+              myVideo.play();
             }
           }
-          window.speechSynthesis.speak(utterance);
         }
-
-        console.log(`${description} (confidence=${confidence.toFixed(2)})`);
-      });
+        else {
+          if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+            player.playVideo();
+          }
+        }
+      }
+      window.speechSynthesis.speak(utterance);
+    }
   }
 
   function playPause() {
-    if(youTubeVideoUrl === "") {
+    if (youTubeVideoUrl === "") {
       var myVideoElement = document.getElementById("video1");
       if (myVideoElement) {
         const myVideo = myVideoElement as HTMLVideoElement;
@@ -130,7 +107,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
         }
       }
     } else {
-      if(player.getPlayerState() === YT.PlayerState.PLAYING) {
+      if (player.getPlayerState() === YT.PlayerState.PLAYING) {
         player.pauseVideo();
       } else {
         player.playVideo();
@@ -138,8 +115,8 @@ export const VideoElement = React.memo(function VideoElement(props) {
     }
   }
 
-  function describe() {
-    if(youTubeVideoUrl === "") {
+  async function describe() {
+    if (youTubeVideoUrl === "") {
       const myVideoElement = document.getElementById("video1");
       if (myVideoElement) {
         const myVideo = myVideoElement as HTMLVideoElement;
@@ -151,7 +128,7 @@ export const VideoElement = React.memo(function VideoElement(props) {
         canvas.width = myVideo.videoWidth;
         var ctx = canvas.getContext("2d");
         ctx?.drawImage(myVideo, 0, 0, canvas.width, canvas.height);
-        computerVision(canvas.toDataURL("image/jpeg"), true);
+        captionImage(canvas.toDataURL("image/jpeg"), true);
       }
     } else {
       capture();
@@ -172,11 +149,11 @@ export const VideoElement = React.memo(function VideoElement(props) {
         <button onClick={() => loadSampleVideo("arnavi_test.mp4")}> Load Basic Wave Video</button></>
     );
   }
-  
-  const SampleVideo = (props: {src: string}): JSX.Element => {
+
+  const SampleVideo = (props: { src: string }): JSX.Element => {
     return (
       <video id="video1" width="700" height="500">
-        <source id="videoSource" src={props.src} type="video/mp4"/>
+        <source id="videoSource" src={props.src} type="video/mp4" />
       </video>);
   }
 
@@ -200,11 +177,11 @@ export const VideoElement = React.memo(function VideoElement(props) {
       </h2>
       <SampleVideoButtons />
 
-      <div style={{marginTop: 30}}>
-          <input id="youtubevideolinkinput" width={200} placeholder="Enter YouTube link" title="Enter YouTube link"/>
-          <button onClick={() => loadYouTubeVideo()}>
-              Load YouTube Video
-          </button>
+      <div style={{ marginTop: 30 }}>
+        <input id="youtubevideolinkinput" width={200} placeholder="Enter YouTube link" title="Enter YouTube link" />
+        <button onClick={() => loadYouTubeVideo()}>
+          Load YouTube Video
+        </button>
       </div>
       <br />
       <br />
@@ -212,14 +189,14 @@ export const VideoElement = React.memo(function VideoElement(props) {
       <button onClick={() => playPause()}>Play/Pause</button>
       <button onClick={() => describe()}>Describe</button>
       <br />
-      { youTubeVideoUrl === "" && <SampleVideo src={videoLoaded} key={videoLoaded}/> }
-      {youTubeVideoUrl !== "" && <div style={{marginTop:30}}>
-        <iframe id="youtubeiframe" width="640" height="360" 
+      {youTubeVideoUrl === "" && <SampleVideo src={videoLoaded} key={videoLoaded} />}
+      {youTubeVideoUrl !== "" && <div style={{ marginTop: 30 }}>
+        <iframe id="youtubeiframe" width="640" height="360" title="youtube video"
           src={`https://www.youtube.com/embed/` + youTubeVideoUrl.substring(youTubeVideoUrl.lastIndexOf("/")) + `?controls=0&enablejsapi=1&rel=0`}>
         </iframe>
       </div>}
       {/* The below div is used to render the captured screenshot for debugging purposes */}
-      <div id="picture" style={{marginTop:60, backgroundColor: 'gray'}}></div> 
+      <div id="picture" style={{ marginTop: 60, backgroundColor: 'gray' }}></div>
     </div>
   );
 });
