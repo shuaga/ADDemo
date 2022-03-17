@@ -2,7 +2,7 @@ module.exports = async function (context, req) {
     /**
     * DO NOT SHARE. This is hard-coded here for rapid prototyping of this project.
     */
-    const key = "8c382a13dd044dd1a92a4ccb3f0310c9";
+    /*const key = "8c382a13dd044dd1a92a4ccb3f0310c9";
     const endpoint = "https://westus2.api.cognitive.microsoft.com/";
     
     const ComputerVisionClient = require("@azure/cognitiveservices-computervision").ComputerVisionClient;
@@ -23,6 +23,9 @@ module.exports = async function (context, req) {
             description: description,
             confidence: confidence
         }
+    }*/
+    context.res = {
+        body: "HelloWorld"
     }
 }
 
