@@ -57,11 +57,11 @@ export const VideoElement = React.memo(function VideoElement(props) {
       captionImage(canvas.toDataURL("image/png"), true);
 
       //This is for debugging to see the captured screenshot.
-      const pic = document.getElementById("picture")!;
+      /*const pic = document.getElementById("picture")!;
       if(pic.childElementCount > 0)
         pic.replaceChild(canvas,pic.children[0]);
       else
-        pic.appendChild(canvas);
+        pic.appendChild(canvas);*/
 
       playPause();
     } 
