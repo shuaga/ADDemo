@@ -6,6 +6,9 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
+  "dependencies":  {
+    "@azure/cognitiveservices-computervision": "^8.1.0",
+    "@azure/ms-rest-js": "^2.6.0"
+  },
   "devDependencies": {}
 }
